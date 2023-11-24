@@ -1,4 +1,4 @@
-# rust-jwt-example
+# rust-jwt-auth
 
 Example of JWT authentication and authorization in Rust using Warp
 

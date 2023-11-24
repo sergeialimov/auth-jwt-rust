@@ -1,15 +1,15 @@
 use crate::{error::Error, Result, WebResult};
 use chrono::prelude::*;
-use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, Encoding, Header, Validation};
+use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use warp::{
-    filters::header::{HeaderMap, HeaderValue, Authorization},
+    filters::header::headers_cloned,
     http::header::{HeaderMap, HeaderValue, AUTHORIZATION},
     reject, Filter, Rejection,
 };
 
-const BEARER:&str = "Bearer ";
+const BEARER: &str = "Bearer ";
 const JWT_SECRET : &[u8] = b"secret";
 
 #[derive(Clone, PartialEq)]
@@ -50,11 +50,11 @@ pub fn with_auth(role: Role) -> impl Filter<Extract = (String,), Error = Rejecti
         .and_then(authorize)
 }
 
-pub fn create_jwt(uid:&str, role: &Role) -> Result<String> {
-    let expiration = Utc.now()
-    .checked_add_signed(chrono::Duration::seconds(60))
-    .expect("valid timestamp")
-    .timestamp();
+pub fn create_jwt(uid: &str, role: &Role) -> Result<String> {
+    let expiration = Utc::now()
+        .checked_add_signed(chrono::Duration::seconds(60))
+        .expect("valid timestamp")
+        .timestamp();
 
     let claims = Claims {
         sub: uid.to_owned(),
@@ -72,12 +72,12 @@ async fn authorize((role, headers): (Role, HeaderMap<HeaderValue>)) -> WebResult
         Ok(jwt) => {
             let decoded = decode::<Claims>(
                 &jwt,
-                &Decodingkey::from_secret(JWT_SECRET),
+                &DecodingKey::from_secret(JWT_SECRET),
                 &Validation::new(Algorithm::HS512),
             )
-            .map_err(|_| reject::custom(Error::JWTToken))?;
+            .map_err(|_| reject::custom(Error::JWTTokenError))?;
 
-        if role ==  Role::Admin && Role::from_str(&decode.claims.role) != Role::Admin {
+        if role ==  Role::Admin && Role::from_str(&decoded.claims.role) != Role::Admin {
             return Err(reject::custom(Error::NoPermissionError));
         }
 
@@ -87,14 +87,14 @@ async fn authorize((role, headers): (Role, HeaderMap<HeaderValue>)) -> WebResult
     }
 }
 
-fn jwt_from_header(header: &HeaderMap<HeaderValue>) -> Result<String> {
+fn jwt_from_header(headers: &HeaderMap<HeaderValue>) -> Result<String> {
     let header = match headers.get(AUTHORIZATION) {
         Some(v) => v,
         None => return Err(Error::NoAuthHeaderError),
     };
-    let auth_header = match std::str::from_utf(header.as_bytes()) {
+    let auth_header = match std::str::from_utf8(header.as_bytes()) {
         Ok(v) => v,
-        Err => return Err(Error::NoAuthHeaderError),
+        Err(_) => return Err(Error::NoAuthHeaderError),
     };
     if !auth_header.starts_with(BEARER) {
         return Err(Error::InvalidAuthHeaderError);

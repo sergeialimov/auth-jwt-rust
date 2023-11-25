@@ -79,11 +79,11 @@ WebResult<impl Reply> {
 }
 
 pub async fn user_handler(uid: String) -> WebResult<impl Reply> {
-    Ok(format!("Hello Admin {}", uid))
+    Ok(format!("Hello User {}", uid))
 }
 
 pub async fn admin_handler(uid: String) -> WebResult<impl Reply> {
-    Ok(format!("Hello User {}", uid))
+    Ok(format!("Hello Admin {}", uid))
 }
 
 fn init_users() -> HashMap<String, User> {

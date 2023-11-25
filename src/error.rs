@@ -16,13 +16,13 @@ pub enum Error {
     #[error("invalid auth header")]
     InvalidAuthHeaderError,
     #[error("no permission")]
-    NoPermissionError
+    NoPermissionError,
 }
 
 #[derive(Serialize, Debug)]
 struct ErrorResponse {
-   message: String,
-   status: String,
+    message: String,
+    status: String,
 }
 
 impl warp::reject::Reject for Error {}
@@ -37,15 +37,15 @@ pub async fn handle_rejection(err: Rejection) -> std::result::Result<impl Reply,
             Error::JWTTokenError => (StatusCode::UNAUTHORIZED, e.to_string()),
             Error::JWTTokenCreationError => (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                "Internal Server Error".to_string()
+                "Internal Server Error".to_string(),
             ),
-            _=> (StatusCode::BAD_REQUEST, e.to_string()),
+            _ => (StatusCode::BAD_REQUEST, e.to_string()),
         }
     } else if err.find::<warp::reject::MethodNotAllowed>().is_some() {
-    (
-        StatusCode::METHOD_NOT_ALLOWED,
-        "Method Not Allowed".to_string(),
-    )
+        (
+            StatusCode::METHOD_NOT_ALLOWED,
+            "Method Not Allowed".to_string(),
+        )
     } else {
         eprintln!("unhandled error: {:?}", err);
         (

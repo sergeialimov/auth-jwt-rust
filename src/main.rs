@@ -6,11 +6,10 @@ use std::convert::Infallible;
 use std::sync::Arc;
 use warp::{reject, reply, Filter, Rejection, Reply};
 
-
 mod auth;
 mod error;
 
-type Result<T>=std::result::Result<T, error::Error>;
+type Result<T> = std::result::Result<T, error::Error>;
 type WebResult<T> = std::result::Result<T, Rejection>;
 type Users = Arc<HashMap<String, User>>;
 
@@ -63,19 +62,18 @@ fn with_users(users: Users) -> impl Filter<Extract = (Users,), Error = Infallibl
     warp::any().map(move || users.clone())
 }
 
-pub async fn login_handler(users: Users, body: LoginRequest) ->
-WebResult<impl Reply> {
+pub async fn login_handler(users: Users, body: LoginRequest) -> WebResult<impl Reply> {
     match users
         .iter()
-        .find(|(_uid, user) | user.email == body.email && user.pw == body.pw)
-        {
-            Some((uid, user)) => {
-                let token = auth::create_jwt(&uid, &Role::from_str(&user.role))
-                    .map_err(|e| reject::custom(e))?;
-                Ok(reply::json(&LoginResponse { token }))
-            }
-            None => Err(reject::custom(WrongCredentialsError)),
+        .find(|(_uid, user)| user.email == body.email && user.pw == body.pw)
+    {
+        Some((uid, user)) => {
+            let token = auth::create_jwt(&uid, &Role::from_str(&user.role))
+                .map_err(|e| reject::custom(e))?;
+            Ok(reply::json(&LoginResponse { token }))
         }
+        None => Err(reject::custom(WrongCredentialsError)),
+    }
 }
 
 pub async fn user_handler(uid: String) -> WebResult<impl Reply> {
@@ -109,5 +107,4 @@ fn init_users() -> HashMap<String, User> {
     );
 
     map
-
 }

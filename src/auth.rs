@@ -10,7 +10,7 @@ use warp::{
 };
 
 const BEARER: &str = "Bearer ";
-const JWT_SECRET : &[u8] = b"secret";
+const JWT_SECRET: &[u8] = b"secret";
 
 #[derive(Clone, PartialEq)]
 pub enum Role {
@@ -22,7 +22,7 @@ impl Role {
     pub fn from_str(role: &str) -> Role {
         match role {
             "Admin" => Role::Admin,
-            _=> Role::User,
+            _ => Role::User,
         }
     }
 }
@@ -42,7 +42,6 @@ struct Claims {
     role: String,
     exp: usize,
 }
-
 
 pub fn with_auth(role: Role) -> impl Filter<Extract = (String,), Error = Rejection> + Clone {
     headers_cloned()
@@ -64,7 +63,6 @@ pub fn create_jwt(uid: &str, role: &Role) -> Result<String> {
     let header = Header::new(Algorithm::HS512);
     encode(&header, &claims, &EncodingKey::from_secret(JWT_SECRET))
         .map_err(|_| Error::JWTTokenCreationError)
-
 }
 
 async fn authorize((role, headers): (Role, HeaderMap<HeaderValue>)) -> WebResult<String> {
@@ -77,11 +75,11 @@ async fn authorize((role, headers): (Role, HeaderMap<HeaderValue>)) -> WebResult
             )
             .map_err(|_| reject::custom(Error::JWTTokenError))?;
 
-        if role ==  Role::Admin && Role::from_str(&decoded.claims.role) != Role::Admin {
-            return Err(reject::custom(Error::NoPermissionError));
-        }
+            if role == Role::Admin && Role::from_str(&decoded.claims.role) != Role::Admin {
+                return Err(reject::custom(Error::NoPermissionError));
+            }
 
-        Ok(decoded.claims.sub)
+            Ok(decoded.claims.sub)
         }
         Err(e) => return Err(reject::custom(e)),
     }
